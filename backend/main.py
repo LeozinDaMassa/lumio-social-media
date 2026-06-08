@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from core.supabase import supabase
 
 app = FastAPI(title="Lumio API")
 
@@ -14,3 +15,8 @@ app.add_middleware(
 @app.get("/")
 def root():
     return {"status": "ok", "app": "Lumio"}
+
+@app.get("/test-db")
+def test_db():
+    result = supabase.table("profiles").select("*").execute()
+    return {"connection": "success", "data": result.data}
