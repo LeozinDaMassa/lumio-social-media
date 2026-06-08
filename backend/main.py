@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from core.supabase import supabase
 from routes.auth import router as auth_router
 from routes.posts import router as posts_router
+from routes.users import router as users_router
 
 app = FastAPI(title="Lumio API")
 
@@ -16,6 +17,7 @@ app.add_middleware(
 
 app.include_router(auth_router, prefix="/auth")
 app.include_router(posts_router, prefix="/posts")
+app.include_router(users_router, prefix="/users")
 
 @app.get("/")
 def root():
