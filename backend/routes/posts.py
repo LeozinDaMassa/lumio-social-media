@@ -75,3 +75,19 @@ def get_comments(post_id: str):
         return {"comments": result.data}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+    
+@router.delete("/{post_id}")
+def delete_post(post_id: str, user=Depends(get_current_user)):
+    try:
+        # First verify the post belongs to the user
+        post = supabase.table("posts").select("user_id").eq("id", post_id).single().execute()
+        
+        if post.data["user_id"] != user.id:
+            raise HTTPException(status_code=403, detail="You can only delete your own posts")
+        
+        supabase.table("posts").delete().eq("id", post_id).execute()
+        return {"message": "Post deleted"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
