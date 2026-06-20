@@ -8,3 +8,6 @@ async def get_current_user(authorization: str = Header(...)):
         return user.user
     except Exception:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
+
+async def get_token(authorization: str = Header(...)):
+    return authorization.replace("Bearer ", "")

@@ -2,24 +2,32 @@ from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from core.supabase import supabase
 from middleware.auth import get_current_user
+from typing import Optional
+from middleware.auth import get_current_user, get_token
+from core.supabase import supabase, get_authed_client
 
 router = APIRouter()
 
 class PostData(BaseModel):
     content: str
-    media_url: str = None
-    media_type: str = None
+    media_url: Optional[str] = None
+    media_type: Optional[str] = None
 
 @router.post("/")
-def create_post(data: PostData, user=Depends(get_current_user)):
+def create_post(data: PostData, user=Depends(get_current_user), token: str = Depends(get_token)):
     try:
-        result = supabase.table("posts").insert({
+        client = get_authed_client(token)
+        result = client.table("posts").insert({
             "user_id": user.id,
             "content": data.content,
             "media_url": data.media_url,
             "media_type": data.media_type
         }).execute()
-        return {"message": "Post created", "post": result.data[0]}
+
+        post_id = result.data[0]["id"]
+        full_post = client.table("posts").select("*, profiles(username, avatar_url)").eq("id", post_id).single().execute()
+
+        return {"message": "Post created", "post": full_post.data}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { getFeed } from "../lib/posts";
 import PostCard from "../components/PostCard";
+import CreatePostBox from "../components/CreatePostBox";
 
 function Feed() {
   const [posts, setPosts] = useState([]);
@@ -22,6 +23,10 @@ function Feed() {
     }
   }
 
+  function handleNewPost(newPost) {
+    setPosts([newPost, ...posts]);
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-night flex items-center justify-center">
@@ -33,9 +38,11 @@ function Feed() {
   return (
     <div className="min-h-screen bg-night px-4 py-8">
       <div className="max-w-xl mx-auto flex flex-col gap-4">
-        <h1 className="text-2xl text-text-primary tracking-widest mb-4">
+        <h1 className="text-2xl text-text-primary tracking-widest mb-2">
           LUMIO
         </h1>
+
+        <CreatePostBox onPostCreated={handleNewPost} />
 
         {error && <p className="text-red-400">{error}</p>}
 
