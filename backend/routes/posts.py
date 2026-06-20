@@ -30,10 +30,22 @@ def create_post(data: PostData, user=Depends(get_current_user), token: str = Dep
         raise HTTPException(status_code=400, detail=str(e))
 
 @router.get("/")
-def get_posts():
+def get_posts(user=Depends(get_current_user)):
     try:
-        result = supabase.table("posts").select("*, profiles(username, avatar_url)").order("created_at", desc=True).execute()
-        return {"posts": result.data}
+        result = supabase.table("posts").select(
+            "*, profiles(username, avatar_url), likes(user_id), comments(id)"
+        ).order("created_at", desc=True).execute()
+
+        posts = []
+        for post in result.data:
+            like_list = post.pop("likes", [])
+            comment_list = post.pop("comments", [])
+            post["like_count"] = len(like_list)
+            post["comment_count"] = len(comment_list)
+            post["liked_by_me"] = any(l["user_id"] == user.id for l in like_list)
+            posts.append(post)
+
+        return {"posts": posts}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 

@@ -2,8 +2,9 @@ import { useState } from "react";
 import { likePost, unlikePost, addComment, getComments } from "../lib/posts";
 
 function PostCard({ post }) {
-  const [liked, setLiked] = useState(false);
-  const [likeCount, setLikeCount] = useState(0);
+  const [liked, setLiked] = useState(post.liked_by_me);
+  const [likeCount, setLikeCount] = useState(post.like_count);
+  const [commentCount, setCommentCount] = useState(post.comment_count);
   const [showComments, setShowComments] = useState(false);
   const [comments, setComments] = useState([]);
   const [commentsLoaded, setCommentsLoaded] = useState(false);
@@ -46,6 +47,7 @@ function PostCard({ post }) {
     try {
       const data = await addComment(post.id, newComment);
       setComments([...comments, data.comment]);
+      setCommentCount((c) => c + 1);
       setNewComment("");
     } catch (err) {
       console.error(err.message);
@@ -99,7 +101,7 @@ function PostCard({ post }) {
           onClick={toggleComments}
           className="hover:text-lavender transition-colors"
         >
-          💬 {comments.length > 0 && comments.length}
+          💬 {commentCount > 0 && commentCount}
         </button>
         <button className="hover:text-lavender transition-colors">
           ↗ Share
