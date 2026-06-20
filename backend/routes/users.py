@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends
-from core.supabase import supabase
-from middleware.auth import get_current_user
 from pydantic import BaseModel
+from core.supabase import supabase, get_authed_client
+from middleware.auth import get_current_user, get_token
 
 router = APIRouter()
 
@@ -14,9 +14,10 @@ def get_profile(user_id: str):
         raise HTTPException(status_code=404, detail="User not found")
 
 @router.post("/{user_id}/follow")
-def follow_user(user_id: str, user=Depends(get_current_user)):
+def follow_user(user_id: str, user=Depends(get_current_user), token: str = Depends(get_token)):
     try:
-        supabase.table("follows").insert({
+        client = get_authed_client(token)
+        client.table("follows").insert({
             "follower_id": user.id,
             "following_id": user_id
         }).execute()
@@ -25,9 +26,10 @@ def follow_user(user_id: str, user=Depends(get_current_user)):
         raise HTTPException(status_code=400, detail=str(e))
 
 @router.delete("/{user_id}/follow")
-def unfollow_user(user_id: str, user=Depends(get_current_user)):
+def unfollow_user(user_id: str, user=Depends(get_current_user), token: str = Depends(get_token)):
     try:
-        supabase.table("follows").delete().match({
+        client = get_authed_client(token)
+        client.table("follows").delete().match({
             "follower_id": user.id,
             "following_id": user_id
         }).execute()
@@ -57,10 +59,11 @@ class ProfileUpdate(BaseModel):
     avatar_url: str = None
 
 @router.patch("/me")
-def update_profile(data: ProfileUpdate, user=Depends(get_current_user)):
+def update_profile(data: ProfileUpdate, user=Depends(get_current_user), token: str = Depends(get_token)):
     try:
+        client = get_authed_client(token)
         updates = {k: v for k, v in data.dict().items() if v is not None}
-        result = supabase.table("profiles").update(updates).eq("id", user.id).execute()
+        result = client.table("profiles").update(updates).eq("id", user.id).execute()
         return {"profile": result.data[0]}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
