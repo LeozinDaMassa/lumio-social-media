@@ -1,7 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
-from core.supabase import supabase
-from middleware.auth import get_current_user
 from typing import Optional
 from middleware.auth import get_current_user, get_token
 from core.supabase import supabase, get_authed_client
@@ -40,9 +38,10 @@ def get_posts():
         raise HTTPException(status_code=400, detail=str(e))
 
 @router.post("/{post_id}/like")
-def like_post(post_id: str, user=Depends(get_current_user)):
+def like_post(post_id: str, user=Depends(get_current_user), token: str = Depends(get_token)):
     try:
-        result = supabase.table("likes").insert({
+        client = get_authed_client(token)
+        client.table("likes").insert({
             "user_id": user.id,
             "post_id": post_id
         }).execute()
@@ -51,9 +50,10 @@ def like_post(post_id: str, user=Depends(get_current_user)):
         raise HTTPException(status_code=400, detail=str(e))
 
 @router.delete("/{post_id}/like")
-def unlike_post(post_id: str, user=Depends(get_current_user)):
+def unlike_post(post_id: str, user=Depends(get_current_user), token: str = Depends(get_token)):
     try:
-        supabase.table("likes").delete().match({
+        client = get_authed_client(token)
+        client.table("likes").delete().match({
             "user_id": user.id,
             "post_id": post_id
         }).execute()
@@ -65,9 +65,10 @@ class CommentData(BaseModel):
     content: str
 
 @router.post("/{post_id}/comment")
-def add_comment(post_id: str, data: CommentData, user=Depends(get_current_user)):
+def add_comment(post_id: str, data: CommentData, user=Depends(get_current_user), token: str = Depends(get_token)):
     try:
-        result = supabase.table("comments").insert({
+        client = get_authed_client(token)
+        result = client.table("comments").insert({
             "user_id": user.id,
             "post_id": post_id,
             "content": data.content
@@ -85,15 +86,15 @@ def get_comments(post_id: str):
         raise HTTPException(status_code=400, detail=str(e))
     
 @router.delete("/{post_id}")
-def delete_post(post_id: str, user=Depends(get_current_user)):
+def delete_post(post_id: str, user=Depends(get_current_user), token: str = Depends(get_token)):
     try:
-        # First verify the post belongs to the user
-        post = supabase.table("posts").select("user_id").eq("id", post_id).single().execute()
+        client = get_authed_client(token)
+        post = client.table("posts").select("user_id").eq("id", post_id).single().execute()
         
         if post.data["user_id"] != user.id:
             raise HTTPException(status_code=403, detail="You can only delete your own posts")
         
-        supabase.table("posts").delete().eq("id", post_id).execute()
+        client.table("posts").delete().eq("id", post_id).execute()
         return {"message": "Post deleted"}
     except HTTPException:
         raise
