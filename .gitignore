@@ -9,6 +9,3 @@ backend/.env
 
 # Mac
 .DS_Store
-
-#README tempfile
-README.md
