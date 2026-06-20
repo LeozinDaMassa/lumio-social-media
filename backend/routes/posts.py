@@ -73,7 +73,11 @@ def add_comment(post_id: str, data: CommentData, user=Depends(get_current_user),
             "post_id": post_id,
             "content": data.content
         }).execute()
-        return {"message": "Comment added", "comment": result.data[0]}
+
+        comment_id = result.data[0]["id"]
+        full_comment = client.table("comments").select("*, profiles(username, avatar_url)").eq("id", comment_id).single().execute()
+
+        return {"message": "Comment added", "comment": full_comment.data}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
